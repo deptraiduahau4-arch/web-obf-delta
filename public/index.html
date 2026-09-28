@@ -3,75 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delta Script Hub & Obfuscator</title>
+    <title>Delta Script Hub - High Security Obfuscator</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: #1e1e1e; padding: 20px; border-radius: 8px; }
-        h2 { text-align: center; color: #00e676; }
-        input, textarea, button { width: 100%; margin-bottom: 15px; padding: 10px; border-radius: 5px; border: none; box-sizing: border-box; }
-        input[type="text"], textarea { background: #2a2a2a; color: #fff; }
-        button { background: #00e676; font-weight: bold; cursor: pointer; color: #000; }
-        .script-item { background: #2a2a2a; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
-        .checkbox-label { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-        .checkbox-label input { width: auto; margin: 0; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        .container { max-width: 650px; margin: auto; background: #1e293b; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h2 { text-align: center; color: #38bdf8; margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9em; color: #94a3b8; }
+        input[type="text"], textarea, input[type="file"] { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #fff; font-size: 0.95em; }
+        textarea { resize: vertical; }
+        button { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 1em; }
+        button:hover { background: #0369a1; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #334155; }
+        .checkbox-group input { width: auto; margin: 0; }
+        .script-card { background: #0f172a; border: 1px solid #334155; padding: 15px; border-radius: 8px; margin-bottom: 12px; }
+        .script-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .script-title { font-weight: bold; color: #f1f5f9; font-size: 1.05em; }
+        .badge { font-size: 0.75em; padding: 3px 8px; border-radius: 4px; background: #0369a1; color: #fff; }
+        .badge-obf { background: #16a34a; }
+        .btn-delete { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85em; width: auto; }
+        .btn-delete:hover { background: #dc2626; }
+        .copy-box { display: flex; gap: 8px; margin-top: 8px; }
+        .copy-box input { flex: 1; margin: 0; font-family: monospace; font-size: 0.85em; }
+        .copy-box button { width: auto; padding: 0 15px; background: #334155; }
+        .copy-box button:hover { background: #475569; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>DELTA SCRIPT HUB</h2>
         
-        <h3>Tạo Script Mới</h3>
-        <input type="text" id="scriptName" placeholder="Tên Script (Ví dụ: Auto Farm Blox Fruit)">
-        <input type="text" id="creatorKey" placeholder="Mã bí mật của bạn (Dùng để sửa sau này)">
-        <textarea id="textCode" rows="5" placeholder="Dán code Luau/Lua vào đây..."></textarea>
-        
-        <label>Hoặc Upload File (.lua / .txt):</label>
-        <input type="file" id="scriptFile" accept=".lua,.txt">
-        
-        <label class="checkbox-label">
+        <div class="form-group">
+            <label>Tên Script</label>
+            <input type="text" id="scriptName" placeholder="Ví dụ: Auto Farm Blox Fruit">
+        </div>
+
+        <div class="form-group">
+            <label>Mã Bí Mật Cá Nhân (Dùng để XÓA script này về sau)</label>
+            <input type="text" id="creatorKey" placeholder="Tự đặt mã bí mật của riêng bạn">
+        </div>
+
+        <div class="form-group">
+            <label>Nội dung Script (Dán Code Lua/Luau)</label>
+            <textarea id="textCode" rows="5" placeholder="print('Hello World')"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Hoặc Upload File Script (.lua / .txt)</label>
+            <input type="file" id="scriptFile" accept=".lua,.txt">
+        </div>
+
+        <div class="form-group checkbox-group">
             <input type="checkbox" id="enableObf" checked>
-            Bật Obfuscate (Mã hóa chống đao code)
-        </label>
-        
-        <button onclick="createScript()">ĐĂNG SCRIPT</button>
+            <label for="enableObf" style="margin:0; color:#fff;">Bật Mã Hóa Bảo Mật Cao (High Security Obfuscator)</label>
+        </div>
 
-        <hr style="border-color: #333; margin: 20px 0;">
+        <button onclick="createScript()">ĐĂNG SCRIPT LÊN HUB</button>
 
-        <h3>Danh Sách Script</h3>
-        <div id="scriptList">Đang tải danh sách...</div>
+        <hr style="border-color: #334155; margin: 25px 0;">
+
+        <h3 style="color: #38bdf8;">Danh Sách Script Công Khai</h3>
+        <div id="scriptList">Đang tải danh sách đồng bộ...</div>
     </div>
 
     <script>
         async function loadScripts() {
-            const res = await fetch('/api/scripts');
-            const data = await res.json();
-            const listDiv = document.getElementById('scriptList');
-            listDiv.innerHTML = '';
+            try {
+                const res = await fetch('/api/scripts');
+                const data = await res.json();
+                const listDiv = document.getElementById('scriptList');
+                listDiv.innerHTML = '';
 
-            data.forEach(s => {
-                const item = document.createElement('div');
-                item.className = 'script-item';
-                const rawUrl = window.location.origin + '/raw/' + s.id;
-                const loadstringCode = `loadstring(game:HttpGet("${rawUrl}"))()`;
-                
-                item.innerHTML = `
-                    <strong>${s.name}</strong> (${s.enableObf ? 'Đã Obf' : 'Code Thô'})<br>
-                    <small>Link Raw cho Delta:</small>
-                    <input type="text" value='${loadstringCode}' readonly onclick="this.select(); document.execCommand('copy'); alert('Đã copy loadstring!');">
-                `;
-                listDiv.appendChild(item);
-            });
+                if (data.length === 0) {
+                    listDiv.innerHTML = '<p style="color:#64748b; text-align:center;">Chưa có script nào được đăng.</p>';
+                    return;
+                }
+
+                data.forEach(s => {
+                    const card = document.createElement('div');
+                    card.className = 'script-card';
+                    const rawUrl = window.location.origin + '/raw/' + s.id;
+                    const loadstringCode = `loadstring(game:HttpGet("${rawUrl}"))()`;
+
+                    card.innerHTML = `
+                        <div class="script-header">
+                            <span class="script-title">${escapeHtml(s.name)}</span>
+                            <span class="badge ${s.enableObf ? 'badge-obf' : ''}">
+                                ${s.enableObf ? 'Đã Obf Bảo Mật' : 'Code Thô'}
+                            </span>
+                        </div>
+                        <div class="copy-box">
+                            <input type="text" value='${loadstringCode}' readonly id="input-${s.id}">
+                            <button onclick="copyToClipboard('input-${s.id}')">Copy</button>
+                        </div>
+                        <div style="margin-top: 10px; text-align: right;">
+                            <button class="btn-delete" onclick="deleteScript('${s.id}')">XÓA SCRIPT</button>
+                        </div>
+                    `;
+                    listDiv.appendChild(card);
+                });
+            } catch (err) {
+                console.error(err);
+            }
         }
 
         async function createScript() {
-            const name = document.getElementById('scriptName').value;
-            const creatorKey = document.getElementById('creatorKey').value;
+            const name = document.getElementById('scriptName').value.trim();
+            const creatorKey = document.getElementById('creatorKey').value.trim();
             const textCode = document.getElementById('textCode').value;
             const scriptFile = document.getElementById('scriptFile').files[0];
             const enableObf = document.getElementById('enableObf').checked;
 
             if (!name || !creatorKey) {
-                alert('Vui lòng nhập Tên Script và Mã bí mật!');
+                alert('Vui lòng điền Tên Script và Mã Bí Mật Cá Nhân!');
+                return;
+            }
+
+            if (!textCode.trim() && !scriptFile) {
+                alert('Vui lòng dán Code hoặc chọn File Script!');
                 return;
             }
 
@@ -89,14 +139,49 @@
 
             const result = await res.json();
             if (result.success) {
-                alert('Tạo script thành công!');
+                alert('Đã đăng script thành công!');
+                document.getElementById('scriptName').value = '';
+                document.getElementById('textCode').value = '';
+                document.getElementById('scriptFile').value = '';
                 loadScripts();
             } else {
                 alert('Lỗi: ' + result.error);
             }
         }
 
+        async function deleteScript(id) {
+            const userKey = prompt("Nhập Mã bí mật của bạn (Hoặc Mã Admin chủ web):");
+            if (!userKey) return;
+
+            const res = await fetch('/api/scripts/' + id, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userKey })
+            });
+
+            const result = await res.json();
+            if (result.success) {
+                alert('Đã xóa script thành công!');
+                loadScripts();
+            } else {
+                alert('Xóa thất bại: ' + result.error);
+            }
+        }
+
+        function copyToClipboard(inputId) {
+            const copyText = document.getElementById(inputId);
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value);
+            alert("Đã copy loadstring cho Delta!");
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
         loadScripts();
+        setInterval(loadScripts, 10000); // Tự động làm mới danh sách mỗi 10 giây
     </script>
 </body>
 </html>
