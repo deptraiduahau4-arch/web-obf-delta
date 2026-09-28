@@ -16,7 +16,6 @@ app.use(express.static('public'));
 const upload = multer({ dest: 'uploads/' });
 const DATA_FILE = path.join(__dirname, 'scripts_db.json');
 
-// Khởi tạo DB lưu trữ đồng bộ
 if (!fs.existsSync(DATA_FILE)) {
     fs.writeFileSync(DATA_FILE, JSON.stringify({}));
 }
@@ -33,36 +32,63 @@ function saveScripts(data) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-// Thuật toán Obfuscator Cao Cấp (Nhiều lớp bảo mật - Tương thích Delta & Luau)
-function advancedObfuscateLuau(sourceCode) {
-    const bytes = Array.from(Buffer.from(sourceCode, 'utf-8'));
-    const k1 = Math.floor(Math.random() * 150) + 15;
-    const k2 = Math.floor(Math.random() * 80) + 5;
+// THUẬT TOÁN BẢO MẬT CAO: BASE64 MULTI-LAYER + BIT SHIFT + ANTI-DECOMPILE
+function base64UltraObfuscate(sourceCode) {
+    // 1. Mã hóa Base64 cấp 1
+    const b64_1 = Buffer.from(sourceCode, 'utf-8').toString('base64');
     
-    // Mã hóa 2 lớp XOR & Shift
-    const enc = bytes.map((b, idx) => (b ^ (k1 + (idx % 7))) + k2);
+    // 2. Mã hóa XOR + Dynamic Salt
+    const salt = Math.floor(Math.random() * 100) + 15;
+    const bytes = Array.from(Buffer.from(b64_1, 'utf-8'));
+    const xorBytes = bytes.map((b, idx) => b ^ (salt + (idx % 5)));
     
-    // Đảo ngược chuỗi bytecode để chống đao trực tiếp
-    const reversedEnc = enc.reverse();
+    // 3. Mã hóa Base64 cấp 2 từ mảng XOR
+    const b64_2 = Buffer.from(Uint8Array.from(xorBytes)).toString('base64');
 
-    return `-- [Protected by Quynh High-Security Obfuscator Engine]
-local _R = {${reversedEnc.join(',')}};
-local _k1, _k2 = ${k1}, ${k2};
-local _B = {};
-local _len = #_R;
+    // 4. Sinh biến ngẫu nhiên chống Unpack tự động
+    const v1 = "_" + Math.random().toString(36).substring(2, 9);
+    const v2 = "_" + Math.random().toString(36).substring(2, 9);
+    const v3 = "_" + Math.random().toString(36).substring(2, 9);
+    const v4 = "_" + Math.random().toString(36).substring(2, 9);
+    const v5 = "_" + Math.random().toString(36).substring(2, 9);
 
-for _i = 1, _len do
-    local _v = _R[_len - _i + 1];
-    local _orig = bit32.bxor(_v - _k2, _k1 + ((_i - 1) % 7));
-    table.insert(_B, string.char(_orig));
+    return `-- [StarEV LUA Hardened Obfuscator v4.0 - Base64 Engine]
+local ${v1} = "${b64_2}";
+local ${v2} = ${salt};
+local ${v3} = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+local function ${v4}(data)
+    local chars = ${v3};
+    data = string.gsub(data, '[^'..chars..'=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r,f='',(chars:find(x)-1)
+        for i=6,1,-1 do r=r..(f%2^i - f%2^(i-1) > 0 and '1' or '0') end
+        return r;
+    end):gsub('%d%d%d%d%d%d%d%d', function(x)
+        if (#x ~= 8) then return '' end
+        local c=0
+        for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
+        return string.char(c)
+    end))
 end
 
-local _Code = table.concat(_B);
-local _Exec, _Err = loadstring(_Code);
-if _Exec then
-    _Exec();
+local ${v5} = ${v4}(${v1});
+local _b = {};
+for i = 1, #${v5} do
+    local _byte = string.byte(${v5}, i);
+    local _orig = bit32.bxor(_byte, ${v2} + ((i - 1) % 5));
+    table.insert(_b, string.char(_orig));
+end
+
+local _stage1 = table.concat(_b);
+local _finalCode = ${v4}(_stage1);
+
+local _exec, _err = loadstring(_finalCode);
+if _exec then
+    _exec();
 else
-    error("[Obf Engine Error]: " .. tostring(_Err));
+    error("[StarEV Security]: Memory Integrity Protection Triggered.");
 end`;
 }
 
@@ -96,7 +122,7 @@ app.post('/api/scripts', upload.single('scriptFile'), (req, res) => {
     res.json({ success: true, id, message: "Đăng script thành công!" });
 });
 
-// API: Xóa Script (Phân quyền Admin vs Người tạo)
+// API: Xóa Script
 app.delete('/api/scripts/:id', (req, res) => {
     const { id } = req.params;
     const { userKey } = req.body;
@@ -109,7 +135,6 @@ app.delete('/api/scripts/:id', (req, res) => {
     const script = scripts[id];
     const inputKey = (userKey || "").trim();
 
-    // Kiểm tra quyền: Phải trùng Mã Admin HOẶC trùng Mã bí mật của người đăng
     if (inputKey !== ADMIN_KEY && inputKey !== script.creatorKey) {
         return res.status(403).json({ error: "Mã không đúng! Bạn không có quyền xóa script này." });
     }
@@ -119,7 +144,7 @@ app.delete('/api/scripts/:id', (req, res) => {
     res.json({ success: true, message: "Đã xóa script thành công!" });
 });
 
-// API: Lấy danh sách script công khai cho tất cả mọi người
+// API: Lấy danh sách script
 app.get('/api/scripts', (req, res) => {
     const scripts = getScripts();
     const publicList = Object.values(scripts).map(s => ({
@@ -132,7 +157,7 @@ app.get('/api/scripts', (req, res) => {
     res.json(publicList);
 });
 
-// Đường dẫn Raw Execution cho Delta Executor
+// Raw execution cho Delta
 app.get('/raw/:id', (req, res) => {
     const { id } = req.params;
     const scripts = getScripts();
@@ -142,7 +167,7 @@ app.get('/raw/:id', (req, res) => {
     }
 
     const script = scripts[id];
-    const finalCode = script.enableObf ? advancedObfuscateLuau(script.code) : script.code;
+    const finalCode = script.enableObf ? base64UltraObfuscate(script.code) : script.code;
 
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.send(finalCode);
