@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delta Script Hub & Obfuscator</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: #1e1e1e; padding: 20px; border-radius: 8px; }
+        h2 { text-align: center; color: #00e676; }
+        input, textarea, button { width: 100%; margin-bottom: 15px; padding: 10px; border-radius: 5px; border: none; box-sizing: border-box; }
+        input[type="text"], textarea { background: #2a2a2a; color: #fff; }
+        button { background: #00e676; font-weight: bold; cursor: pointer; color: #000; }
+        .script-item { background: #2a2a2a; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+        .checkbox-label { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .checkbox-label input { width: auto; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>DELTA SCRIPT HUB</h2>
+        
+        <h3>Tạo Script Mới</h3>
+        <input type="text" id="scriptName" placeholder="Tên Script (Ví dụ: Auto Farm Blox Fruit)">
+        <input type="text" id="creatorKey" placeholder="Mã bí mật của bạn (Dùng để sửa sau này)">
+        <textarea id="textCode" rows="5" placeholder="Dán code Luau/Lua vào đây..."></textarea>
+        
+        <label>Hoặc Upload File (.lua / .txt):</label>
+        <input type="file" id="scriptFile" accept=".lua,.txt">
+        
+        <label class="checkbox-label">
+            <input type="checkbox" id="enableObf" checked>
+            Bật Obfuscate (Mã hóa chống đao code)
+        </label>
+        
+        <button onclick="createScript()">ĐĂNG SCRIPT</button>
+
+        <hr style="border-color: #333; margin: 20px 0;">
+
+        <h3>Danh Sách Script</h3>
+        <div id="scriptList">Đang tải danh sách...</div>
+    </div>
+
+    <script>
+        async function loadScripts() {
+            const res = await fetch('/api/scripts');
+            const data = await res.json();
+            const listDiv = document.getElementById('scriptList');
+            listDiv.innerHTML = '';
+
+            data.forEach(s => {
+                const item = document.createElement('div');
+                item.className = 'script-item';
+                const rawUrl = window.location.origin + '/raw/' + s.id;
+                const loadstringCode = `loadstring(game:HttpGet("${rawUrl}"))()`;
+                
+                item.innerHTML = `
+                    <strong>${s.name}</strong> (${s.enableObf ? 'Đã Obf' : 'Code Thô'})<br>
+                    <small>Link Raw cho Delta:</small>
+                    <input type="text" value='${loadstringCode}' readonly onclick="this.select(); document.execCommand('copy'); alert('Đã copy loadstring!');">
+                `;
+                listDiv.appendChild(item);
+            });
+        }
+
+        async function createScript() {
+            const name = document.getElementById('scriptName').value;
+            const creatorKey = document.getElementById('creatorKey').value;
+            const textCode = document.getElementById('textCode').value;
+            const scriptFile = document.getElementById('scriptFile').files[0];
+            const enableObf = document.getElementById('enableObf').checked;
+
+            if (!name || !creatorKey) {
+                alert('Vui lòng nhập Tên Script và Mã bí mật!');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('creatorKey', creatorKey);
+            formData.append('enableObf', enableObf);
+            if (textCode) formData.append('textCode', textCode);
+            if (scriptFile) formData.append('scriptFile', scriptFile);
+
+            const res = await fetch('/api/scripts', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await res.json();
+            if (result.success) {
+                alert('Tạo script thành công!');
+                loadScripts();
+            } else {
+                alert('Lỗi: ' + result.error);
+            }
+        }
+
+        loadScripts();
+    </script>
+</body>
+</html>
