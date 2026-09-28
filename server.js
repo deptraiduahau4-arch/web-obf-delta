@@ -114,6 +114,25 @@ app.put('/api/scripts/:id', upload.single('scriptFile'), (req, res) => {
     res.json({ success: true, message: "Cập nhật thành công!" });
 });
 
+// API: Xóa Script (Cần nhập đúng creatorKey hoặc ADMIN_KEY)
+app.delete('/api/scripts/:id', (req, res) => {
+    const { id } = req.params;
+    const { userKey } = req.body;
+    const scripts = getScripts();
+
+    if (!scripts[id]) {
+        return res.status(404).json({ error: "Script không tồn tại!" });
+    }
+
+    if (userKey !== ADMIN_KEY && userKey !== scripts[id].creatorKey) {
+        return res.status(403).json({ error: "Bạn không có quyền xóa script này!" });
+    }
+
+    delete scripts[id];
+    saveScripts(scripts);
+    res.json({ success: true, message: "Đã xóa script thành công!" });
+});
+
 // API: Lấy danh sách script public
 app.get('/api/scripts', (req, res) => {
     const scripts = getScripts();
