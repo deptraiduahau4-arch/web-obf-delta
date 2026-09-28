@@ -6,65 +6,187 @@
     <title>StarEV LUA - High Security Obfuscator</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-        .container { max-width: 650px; margin: auto; background: #1e293b; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        h2 { text-align: center; color: #38bdf8; margin-top: 0; font-weight: 800; letter-spacing: 1px; }
+        
+        body { 
+            background-color: #050505; 
+            color: #f8fafc; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Hiệu ứng viền cầu vồng xoay cho Khung chính */
+        .rainbow-box {
+            position: relative;
+            max-width: 650px;
+            width: 100%;
+            background: #0d0d0d;
+            border-radius: 16px;
+            padding: 3px; /* Độ dày của viền cầu vồng */
+            background-image: linear-gradient(60deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bfd, #7a00ff, #ff00c8, #ff0000);
+            background-size: 300% 300%;
+            animation: rainbowAnimation 6s ease infinite;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.9);
+        }
+
+        @keyframes rainbowAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container { 
+            background: #0d0d0d; 
+            padding: 25px; 
+            border-radius: 14px; 
+        }
+
+        h2 { 
+            text-align: center; 
+            background: linear-gradient(to right, #ff007f, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-top: 0; 
+            font-weight: 900; 
+            letter-spacing: 2px;
+            font-size: 2em;
+        }
+
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9em; color: #94a3b8; }
-        input[type="text"], textarea, input[type="file"] { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #fff; font-size: 0.95em; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9em; color: #a1a1aa; }
+        
+        input[type="text"], textarea, input[type="file"] { 
+            width: 100%; 
+            padding: 12px; 
+            background: #171717; 
+            border: 1px solid #27272a; 
+            border-radius: 8px; 
+            color: #fff; 
+            font-size: 0.95em; 
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: #a855f7;
+            box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+        }
+
         textarea { resize: vertical; }
-        button { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 1em; }
-        button:hover { background: #0369a1; }
-        .checkbox-group { display: flex; align-items: center; gap: 10px; background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #334155; }
+
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background: linear-gradient(90deg, #6366f1, #a855f7); 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            font-size: 1em; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover { 
+            opacity: 0.9;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+        }
+
+        .checkbox-group { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            background: #171717; 
+            padding: 12px; 
+            border-radius: 8px; 
+            border: 1px solid #27272a; 
+        }
         .checkbox-group input { width: auto; margin: 0; }
-        .script-card { background: #0f172a; border: 1px solid #334155; padding: 15px; border-radius: 8px; margin-bottom: 12px; }
+
+        /* Viền cầu vồng cho từng thẻ Script */
+        .script-card-rainbow {
+            position: relative;
+            padding: 2px;
+            background-image: linear-gradient(135deg, #ff007f, #7928ca, #00dfd8);
+            background-size: 200% 200%;
+            animation: rainbowAnimation 8s ease infinite;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .script-card { 
+            background: #121212; 
+            padding: 15px; 
+            border-radius: 8px; 
+        }
+
         .script-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .script-title { font-weight: bold; color: #f1f5f9; font-size: 1.05em; }
-        .badge { font-size: 0.75em; padding: 3px 8px; border-radius: 4px; background: #0369a1; color: #fff; }
-        .badge-obf { background: #16a34a; }
-        .btn-delete { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85em; width: auto; }
-        .btn-delete:hover { background: #dc2626; }
+        .script-title { font-weight: bold; color: #f4f4f5; font-size: 1.05em; }
+        
+        .badge { font-size: 0.75em; padding: 4px 8px; border-radius: 4px; background: #3b82f6; color: #fff; font-weight: bold; }
+        .badge-obf { background: #10b981; }
+
+        .btn-delete { 
+            background: #ef4444; 
+            color: white; 
+            border: none; 
+            padding: 6px 14px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 0.85em; 
+            width: auto; 
+            transition: 0.2s;
+        }
+        .btn-delete:hover { background: #dc2626; box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
+
         .copy-box { display: flex; gap: 8px; margin-top: 8px; }
-        .copy-box input { flex: 1; margin: 0; font-family: monospace; font-size: 0.85em; }
-        .copy-box button { width: auto; padding: 0 15px; background: #334155; }
-        .copy-box button:hover { background: #475569; }
+        .copy-box input { flex: 1; margin: 0; font-family: monospace; font-size: 0.85em; background: #000; }
+        .copy-box button { width: auto; padding: 0 15px; background: #27272a; text-transform: none; }
+        .copy-box button:hover { background: #3f3f46; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>STAREV LUA</h2>
-        
-        <div class="form-group">
-            <label>Tên Script</label>
-            <input type="text" id="scriptName" placeholder="Ví dụ: Auto Farm Blox Fruit">
+    <div class="rainbow-box">
+        <div class="container">
+            <h2>STAREV LUA</h2>
+            
+            <div class="form-group">
+                <label>Tên Script</label>
+                <input type="text" id="scriptName" placeholder="Ví dụ: Auto Farm Blox Fruit">
+            </div>
+
+            <div class="form-group">
+                <label>Mã Bí Mật Cá Nhân (Dùng để XÓA script này về sau)</label>
+                <input type="text" id="creatorKey" placeholder="Tự đặt mã bí mật của riêng bạn">
+            </div>
+
+            <div class="form-group">
+                <label>Nội dung Script (Dán Code Lua/Luau)</label>
+                <textarea id="textCode" rows="5" placeholder="print('Hello World')"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Hoặc Upload File Script (.lua / .txt)</label>
+                <input type="file" id="scriptFile" accept=".lua,.txt">
+            </div>
+
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="enableObf" checked>
+                <label for="enableObf" style="margin:0; color:#fff;">Bật Mã Hóa Bảo Mật Cao (StarEV Obfuscator)</label>
+            </div>
+
+            <button onclick="createScript()">ĐĂNG SCRIPT LÊN HUB</button>
+
+            <hr style="border-color: #27272a; margin: 25px 0;">
+
+            <h3 style="color: #a855f7; text-align: center;">Danh Sách Script Công Khai</h3>
+            <div id="scriptList">Đang tải danh sách đồng bộ...</div>
         </div>
-
-        <div class="form-group">
-            <label>Mã Bí Mật Cá Nhân (Dùng để XÓA script này về sau)</label>
-            <input type="text" id="creatorKey" placeholder="Tự đặt mã bí mật của riêng bạn">
-        </div>
-
-        <div class="form-group">
-            <label>Nội dung Script (Dán Code Lua/Luau)</label>
-            <textarea id="textCode" rows="5" placeholder="print('Hello World')"></textarea>
-        </div>
-
-        <div class="form-group">
-            <label>Hoặc Upload File Script (.lua / .txt)</label>
-            <input type="file" id="scriptFile" accept=".lua,.txt">
-        </div>
-
-        <div class="form-group checkbox-group">
-            <input type="checkbox" id="enableObf" checked>
-            <label for="enableObf" style="margin:0; color:#fff;">Bật Mã Hóa Bảo Mật Cao (StarEV Obfuscator)</label>
-        </div>
-
-        <button onclick="createScript()">ĐĂNG SCRIPT LÊN HUB</button>
-
-        <hr style="border-color: #334155; margin: 25px 0;">
-
-        <h3 style="color: #38bdf8;">Danh Sách Script Công Khai</h3>
-        <div id="scriptList">Đang tải danh sách đồng bộ...</div>
     </div>
 
     <script>
@@ -76,32 +198,35 @@
                 listDiv.innerHTML = '';
 
                 if (data.length === 0) {
-                    listDiv.innerHTML = '<p style="color:#64748b; text-align:center;">Chưa có script nào được đăng.</p>';
+                    listDiv.innerHTML = '<p style="color:#71717a; text-align:center;">Chưa có script nào được đăng.</p>';
                     return;
                 }
 
                 data.forEach(s => {
-                    const card = document.createElement('div');
-                    card.className = 'script-card';
+                    const cardWrapper = document.createElement('div');
+                    cardWrapper.className = 'script-card-rainbow';
+                    
                     const rawUrl = window.location.origin + '/raw/' + s.id;
                     const loadstringCode = `loadstring(game:HttpGet("${rawUrl}"))()`;
 
-                    card.innerHTML = `
-                        <div class="script-header">
-                            <span class="script-title">${escapeHtml(s.name)}</span>
-                            <span class="badge ${s.enableObf ? 'badge-obf' : ''}">
-                                ${s.enableObf ? 'Đã Obf Bảo Mật' : 'Code Thô'}
-                            </span>
-                        </div>
-                        <div class="copy-box">
-                            <input type="text" value='${loadstringCode}' readonly id="input-${s.id}">
-                            <button onclick="copyToClipboard('input-${s.id}')">Copy</button>
-                        </div>
-                        <div style="margin-top: 10px; text-align: right;">
-                            <button class="btn-delete" onclick="deleteScript('${s.id}')">XÓA SCRIPT</button>
+                    cardWrapper.innerHTML = `
+                        <div class="script-card">
+                            <div class="script-header">
+                                <span class="script-title">${escapeHtml(s.name)}</span>
+                                <span class="badge ${s.enableObf ? 'badge-obf' : ''}">
+                                    ${s.enableObf ? 'Đã Obf Bảo Mật' : 'Code Thô'}
+                                </span>
+                            </div>
+                            <div class="copy-box">
+                                <input type="text" value='${loadstringCode}' readonly id="input-${s.id}">
+                                <button onclick="copyToClipboard('input-${s.id}')">Copy</button>
+                            </div>
+                            <div style="margin-top: 10px; text-align: right;">
+                                <button class="btn-delete" onclick="deleteScript('${s.id}')">XÓA SCRIPT</button>
+                            </div>
                         </div>
                     `;
-                    listDiv.appendChild(card);
+                    listDiv.appendChild(cardWrapper);
                 });
             } catch (err) {
                 console.error(err);
