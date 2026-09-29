@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
+const mongoose = require('mongoose');
 const fs = require('fs');
-const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,32 +9,33 @@ const PORT = process.env.PORT || 3000;
 // MÃ ADMIN CHỦ WEB: Toàn quyền quản trị & xóa tất cả script
 const ADMIN_KEY = "quynh_admin_boss_123";
 
+// Cấu hình Chuỗi Kết Nối Database Cloud (Thay link MongoDB của em vào đây nếu có)
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://starev_user:Starev123456@cluster0.mongodb.net/starev_db?retryWrites=true&w=majority";
+
+// Kết nối CSDL Đám mây MongoDB Atlas
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('[StarEV DB]: Đã kết nối MongoDB Cloud! Script sẽ được lưu vĩnh viễn.'))
+    .catch(err => console.error('[StarEV DB Error]: Không thể kết nối MongoDB:', err.message));
+
+// Định nghĩa Schema lưu trữ Script
+const scriptSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    code: { type: String, required: true },
+    enableObf: { type: Boolean, default: true },
+    creatorKey: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const Script = mongoose.model('Script', scriptSchema);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 const upload = multer({ dest: 'uploads/' });
-const DATA_FILE = path.join(__dirname, 'scripts_db.json');
-
-if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({}));
-}
-
-function getScripts() {
-    try {
-        return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-    } catch (e) {
-        return {};
-    }
-}
-
-function saveScripts(data) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
 
 // -----------------------------------------------------------------
 // THUẬT TOÁN OBFUSCATE TỐI ƯU 100% CHO DELTA X (LUAU / LUA 5.1 ENGINE)
-// Chống crash, tương thích hoàn toàn trên Mobile Executable!
 // -----------------------------------------------------------------
 function deltaXObfuscate(sourceCode) {
     if (!sourceCode) return '';
@@ -43,7 +44,6 @@ function deltaXObfuscate(sourceCode) {
     const key = Math.floor(Math.random() * 200) + 15;
     const xorBytes = bytes.map((b, i) => b ^ (key + (i % 7)));
 
-    // Sinh biến ngẫu nhiên bảo mật
     const vKey = "_k" + Math.random().toString(36).substring(2, 7);
     const vData = "_d" + Math.random().toString(36).substring(2, 7);
     const vStr = "_s" + Math.random().toString(36).substring(2, 7);
@@ -55,7 +55,6 @@ local ${vKey} = ${key}
 local ${vData} = {${xorBytes.join(',')}}
 local ${vStr} = {}
 
--- Bitwise XOR tương thích tuyệt đối cho Luau/Delta X
 local function ${vXor}(a, b)
     if bit32 and bit32.bxor then
         return bit32.bxor(a, b)
@@ -88,87 +87,93 @@ else
 end`;
 }
 
-// API: Tạo Script mới
-app.post('/api/scripts', upload.single('scriptFile'), (req, res) => {
-    const { name, textCode, enableObf, creatorKey } = req.body;
-    let codeContent = textCode || "";
+// API: Đăng Script Mới lên Cloud
+app.post('/api/scripts', upload.single('scriptFile'), async (req, res) => {
+    try {
+        const { name, textCode, enableObf, creatorKey } = req.body;
+        let codeContent = textCode || "";
 
-    if (req.file) {
-        try {
-            codeContent = fs.readFileSync(req.file.path, 'utf-8');
-            fs.unlinkSync(req.file.path);
-        } catch (e) {}
+        if (req.file) {
+            try {
+                codeContent = fs.readFileSync(req.file.path, 'utf-8');
+                fs.unlinkSync(req.file.path);
+            } catch (e) {}
+        }
+
+        if (!name || !codeContent.trim() || !creatorKey) {
+            return res.status(400).json({ error: "Vui lòng nhập đầy đủ Tên, Code và Mã bí mật!" });
+        }
+
+        const newScript = new Script({
+            name: name.trim(),
+            code: codeContent,
+            enableObf: enableObf === 'true' || enableObf === true,
+            creatorKey: creatorKey.trim()
+        });
+
+        await newScript.save();
+        res.json({ success: true, id: newScript._id, message: "Đăng script thành công!" });
+    } catch (err) {
+        res.status(500).json({ error: "Lỗi kết nối cơ sở dữ liệu!" });
     }
-
-    if (!name || !codeContent.trim() || !creatorKey) {
-        return res.status(400).json({ error: "Vui lòng nhập đầy đủ Tên, Code và Mã bí mật!" });
-    }
-
-    const scripts = getScripts();
-    const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-
-    scripts[id] = {
-        id,
-        name,
-        code: codeContent,
-        enableObf: enableObf === 'true' || enableObf === true,
-        creatorKey: creatorKey.trim(),
-        createdAt: new Date().toISOString()
-    };
-
-    saveScripts(scripts);
-    res.json({ success: true, id, message: "Đăng script thành công!" });
 });
 
 // API: Xóa Script
-app.delete('/api/scripts/:id', (req, res) => {
-    const { id } = req.params;
-    const { userKey } = req.body;
-    const scripts = getScripts();
+app.delete('/api/scripts/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { userKey } = req.body;
 
-    if (!scripts[id]) {
-        return res.status(404).json({ error: "Script không tồn tại hoặc đã bị xóa!" });
+        const script = await Script.findById(id);
+        if (!script) {
+            return res.status(404).json({ error: "Script không tồn tại hoặc đã bị xóa!" });
+        }
+
+        const inputKey = (userKey || "").trim();
+        if (inputKey !== ADMIN_KEY && inputKey !== script.creatorKey) {
+            return res.status(403).json({ error: "Mã không đúng! Bạn không có quyền xóa script này." });
+        }
+
+        await Script.findByIdAndDelete(id);
+        res.json({ success: true, message: "Đã xóa script thành công!" });
+    } catch (err) {
+        res.status(500).json({ error: "Lỗi xử lý xóa script!" });
     }
-
-    const script = scripts[id];
-    const inputKey = (userKey || "").trim();
-
-    if (inputKey !== ADMIN_KEY && inputKey !== script.creatorKey) {
-        return res.status(403).json({ error: "Mã không đúng! Bạn không có quyền xóa script này." });
-    }
-
-    delete scripts[id];
-    saveScripts(scripts);
-    res.json({ success: true, message: "Đã xóa script thành công!" });
 });
 
 // API: Lấy danh sách script công khai
-app.get('/api/scripts', (req, res) => {
-    const scripts = getScripts();
-    const publicList = Object.values(scripts).map(s => ({
-        id: s.id,
-        name: s.name,
-        enableObf: s.enableObf,
-        createdAt: s.createdAt
-    })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    res.json(publicList);
+app.get('/api/scripts', async (req, res) => {
+    try {
+        const scripts = await Script.find().sort({ createdAt: -1 });
+        const publicList = scripts.map(s => ({
+            id: s._id,
+            name: s.name,
+            enableObf: s.enableObf,
+            createdAt: s.createdAt
+        }));
+        res.json(publicList);
+    } catch (err) {
+        res.status(500).json({ error: "Không thể lấy danh sách script!" });
+    }
 });
 
 // Raw execution cho Delta X
-app.get('/raw/:id', (req, res) => {
-    const { id } = req.params;
-    const scripts = getScripts();
+app.get('/raw/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const script = await Script.findById(id);
 
-    if (!scripts[id]) {
-        return res.status(404).send('-- [Error]: Script not found or removed.');
+        if (!script) {
+            return res.status(404).send('-- [Error]: Script not found or removed.');
+        }
+
+        const finalCode = script.enableObf ? deltaXObfuscate(script.code) : script.code;
+
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.send(finalCode);
+    } catch (err) {
+        res.status(500).send('-- [Error]: Internal Database Error.');
     }
-
-    const script = scripts[id];
-    const finalCode = script.enableObf ? deltaXObfuscate(script.code) : script.code;
-
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.send(finalCode);
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
