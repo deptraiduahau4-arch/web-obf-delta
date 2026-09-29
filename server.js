@@ -9,8 +9,8 @@ const PORT = process.env.PORT || 3000;
 // MÃ ADMIN CHỦ WEB: Toàn quyền quản trị & xóa tất cả script
 const ADMIN_KEY = "quynh_admin_boss_123";
 
-// Cấu hình Chuỗi Kết Nối Database Cloud (Thay link MongoDB của em vào đây nếu có)
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://starev_user:Starev123456@cluster0.mongodb.net/starev_db?retryWrites=true&w=majority";
+// Cấu hình Chuỗi Kết Nối Database Cloud MongoDB Atlas
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://deptraiduahau4_db_user:9tCyK8j2M6w3yr1H@cluster0.ja5qluv.mongodb.net/starev_db?retryWrites=true&w=majority";
 
 // Kết nối CSDL Đám mây MongoDB Atlas
 mongoose.connect(MONGO_URI)
@@ -77,7 +77,7 @@ local _code = table.concat(${vStr})
 local _exec, _err = loadstring or load
 if _exec then
     local _fn, _syntaxErr = _exec(_code)
-    if _fn then
+    if _fn me
         return _fn()
     else
         error("[StarEV Security]: Execution Error - " .. tostring(_syntaxErr))
