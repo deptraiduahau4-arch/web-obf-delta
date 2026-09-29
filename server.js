@@ -32,63 +32,59 @@ function saveScripts(data) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-// THUẬT TOÁN BẢO MẬT CAO: BASE64 MULTI-LAYER + BIT SHIFT + ANTI-DECOMPILE
-function base64UltraObfuscate(sourceCode) {
-    // 1. Mã hóa Base64 cấp 1
-    const b64_1 = Buffer.from(sourceCode, 'utf-8').toString('base64');
+// -----------------------------------------------------------------
+// THUẬT TOÁN OBFUSCATE TỐI ƯU 100% CHO DELTA X (LUAU / LUA 5.1 ENGINE)
+// Chống crash, tương thích hoàn toàn trên Mobile Executable!
+// -----------------------------------------------------------------
+function deltaXObfuscate(sourceCode) {
+    if (!sourceCode) return '';
     
-    // 2. Mã hóa XOR + Dynamic Salt
-    const salt = Math.floor(Math.random() * 100) + 15;
-    const bytes = Array.from(Buffer.from(b64_1, 'utf-8'));
-    const xorBytes = bytes.map((b, idx) => b ^ (salt + (idx % 5)));
-    
-    // 3. Mã hóa Base64 cấp 2 từ mảng XOR
-    const b64_2 = Buffer.from(Uint8Array.from(xorBytes)).toString('base64');
+    const bytes = Array.from(Buffer.from(sourceCode, 'utf-8'));
+    const key = Math.floor(Math.random() * 200) + 15;
+    const xorBytes = bytes.map((b, i) => b ^ (key + (i % 7)));
 
-    // 4. Sinh biến ngẫu nhiên chống Unpack tự động
-    const v1 = "_" + Math.random().toString(36).substring(2, 9);
-    const v2 = "_" + Math.random().toString(36).substring(2, 9);
-    const v3 = "_" + Math.random().toString(36).substring(2, 9);
-    const v4 = "_" + Math.random().toString(36).substring(2, 9);
-    const v5 = "_" + Math.random().toString(36).substring(2, 9);
+    // Sinh biến ngẫu nhiên bảo mật
+    const vKey = "_k" + Math.random().toString(36).substring(2, 7);
+    const vData = "_d" + Math.random().toString(36).substring(2, 7);
+    const vStr = "_s" + Math.random().toString(36).substring(2, 7);
+    const vByte = "_b" + Math.random().toString(36).substring(2, 7);
+    const vXor = "_x" + Math.random().toString(36).substring(2, 7);
 
-    return `-- [StarEV LUA Hardened Obfuscator v4.0 - Base64 Engine]
-local ${v1} = "${b64_2}";
-local ${v2} = ${salt};
-local ${v3} = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    return `-- [StarEV LUA Hardened - Delta X Native Engine]
+local ${vKey} = ${key}
+local ${vData} = {${xorBytes.join(',')}}
+local ${vStr} = {}
 
-local function ${v4}(data)
-    local chars = ${v3};
-    data = string.gsub(data, '[^'..chars..'=]', '')
-    return (data:gsub('.', function(x)
-        if (x == '=') then return '' end
-        local r,f='',(chars:find(x)-1)
-        for i=6,1,-1 do r=r..(f%2^i - f%2^(i-1) > 0 and '1' or '0') end
-        return r;
-    end):gsub('%d%d%d%d%d%d%d%d', function(x)
-        if (#x ~= 8) then return '' end
-        local c=0
-        for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
-        return string.char(c)
-    end))
+-- Bitwise XOR tương thích tuyệt đối cho Luau/Delta X
+local function ${vXor}(a, b)
+    if bit32 and bit32.bxor then
+        return bit32.bxor(a, b)
+    end
+    local r, p = 0, 1
+    while a > 0 and b > 0 do
+        local ra, rb = a % 2, b % 2
+        if ra ~= rb then r = r + p end
+        a, b, p = (a - ra) / 2, (b - rb) / 2, p * 2
+    end
+    return r + (a + b) * p
 end
 
-local ${v5} = ${v4}(${v1});
-local _b = {};
-for i = 1, #${v5} do
-    local _byte = string.byte(${v5}, i);
-    local _orig = bit32.bxor(_byte, ${v2} + ((i - 1) % 5));
-    table.insert(_b, string.char(_orig));
+for i = 1, #${vData} do
+    local ${vByte} = ${vXor}(${vData}[i], ${vKey} + ((i - 1) % 7))
+    table.insert(${vStr}, string.char(${vByte}))
 end
 
-local _stage1 = table.concat(_b);
-local _finalCode = ${v4}(_stage1);
-
-local _exec, _err = loadstring(_finalCode);
+local _code = table.concat(${vStr})
+local _exec, _err = loadstring or load
 if _exec then
-    _exec();
+    local _fn, _syntaxErr = _exec(_code)
+    if _fn then
+        return _fn()
+    else
+        error("[StarEV Security]: Execution Error - " .. tostring(_syntaxErr))
+    end
 else
-    error("[StarEV Security]: Memory Integrity Protection Triggered.");
+    error("[StarEV Security]: Executor not supported.")
 end`;
 }
 
@@ -98,8 +94,10 @@ app.post('/api/scripts', upload.single('scriptFile'), (req, res) => {
     let codeContent = textCode || "";
 
     if (req.file) {
-        codeContent = fs.readFileSync(req.file.path, 'utf-8');
-        try { fs.unlinkSync(req.file.path); } catch (e) {}
+        try {
+            codeContent = fs.readFileSync(req.file.path, 'utf-8');
+            fs.unlinkSync(req.file.path);
+        } catch (e) {}
     }
 
     if (!name || !codeContent.trim() || !creatorKey) {
@@ -144,7 +142,7 @@ app.delete('/api/scripts/:id', (req, res) => {
     res.json({ success: true, message: "Đã xóa script thành công!" });
 });
 
-// API: Lấy danh sách script
+// API: Lấy danh sách script công khai
 app.get('/api/scripts', (req, res) => {
     const scripts = getScripts();
     const publicList = Object.values(scripts).map(s => ({
@@ -157,7 +155,7 @@ app.get('/api/scripts', (req, res) => {
     res.json(publicList);
 });
 
-// Raw execution cho Delta
+// Raw execution cho Delta X
 app.get('/raw/:id', (req, res) => {
     const { id } = req.params;
     const scripts = getScripts();
@@ -167,7 +165,7 @@ app.get('/raw/:id', (req, res) => {
     }
 
     const script = scripts[id];
-    const finalCode = script.enableObf ? base64UltraObfuscate(script.code) : script.code;
+    const finalCode = script.enableObf ? deltaXObfuscate(script.code) : script.code;
 
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.send(finalCode);
